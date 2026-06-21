@@ -23,80 +23,86 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, sans-serif;
-  font-size: 15px;
   padding: 12px;
   height: 100vh;
   overflow: hidden;
-}
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  height: 100%;
 }
 
-/* Header spans full width */
+/* ── Header ── */
 .header {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .header-left { display: flex; align-items: center; gap: 8px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; transition: background 0.3s; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); transition: background 0.3s; }
 .dot.ok { background: var(--green); }
-.hostname { font-size: 17px; font-weight: 500; }
-.uptime { font-size: 12px; color: var(--muted); margin-top: 1px; }
-.ts { font-size: 12px; color: var(--muted); }
+.hostname { font-size: 20px; font-weight: 500; }
+.uptime { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.ts { font-size: 13px; color: var(--muted); }
 
-/* Stat cards row spans full width */
-.cards {
-  grid-column: 1 / -1;
+/* ── Top section: CPU + Memory side by side ── */
+.top {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex-shrink: 0;
 }
-.card {
+.panel {
   background: var(--bg2);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 14px 16px;
 }
-.card-label {
-  font-size: 11px;
+.panel-label {
+  font-size: 12px;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
-.card-value { font-size: 26px; font-weight: 500; line-height: 1; }
-.card-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.bar-wrap { height: 3px; background: var(--bg3); border-radius: 2px; margin-top: 7px; overflow: hidden; }
-.bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; background: var(--green); }
+.panel-value { font-size: 42px; font-weight: 500; line-height: 1; }
+.panel-sub { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.bar-wrap { height: 5px; background: var(--bg3); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+.bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; background: var(--green); }
 .bar.warn { background: var(--amber); }
 .bar.crit { background: var(--red); }
 
-/* Left column: CPU cores */
-.col-left { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-/* Right column: disk + procs */
-.col-right { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+/* CPU core grid — 6 cols for 12 cores */
+.cpu-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.core { text-align: center; }
+.core-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.core-val { font-size: 15px; font-weight: 500; }
 
+/* ── Bottom section: disk / net / procs ── */
+.bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
 .section {
   background: var(--bg2);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-.section.grow { flex: 1; }
 .section-head {
-  padding: 6px 12px;
+  padding: 8px 14px;
   font-size: 11px;
   font-weight: 500;
   color: var(--muted);
@@ -110,109 +116,76 @@ body {
 }
 .section-body { overflow-y: auto; flex: 1; }
 
-/* CPU grid */
-.cpu-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-  gap: 6px;
-  padding: 10px 12px;
-}
-.core { text-align: center; }
-.core-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-.core-val { font-size: 13px; font-weight: 500; }
-
-/* Rows */
 .row {
   display: flex;
   align-items: center;
-  padding: 7px 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border);
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .row:last-child { border-bottom: none; }
-.mono { font-family: var(--mono); font-size: 12px; }
+.mono { font-family: var(--mono); font-size: 13px; }
 .muted { color: var(--muted); }
 .val { color: var(--text); font-weight: 500; }
 
-/* Disk */
-.disk-mount { min-width: 80px; flex-shrink: 0; }
-.disk-bar { flex: 1; height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.disk-mount { min-width: 60px; flex-shrink: 0; }
+.disk-bar { flex: 1; height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
 .disk-fill { height: 100%; border-radius: 2px; background: var(--green); }
 .disk-fill.warn { background: var(--amber); }
 .disk-fill.crit { background: var(--red); }
-.disk-pct { min-width: 32px; text-align: right; font-size: 12px; color: var(--muted); }
-.disk-size { min-width: 72px; text-align: right; font-size: 12px; color: var(--muted); }
+.disk-pct { min-width: 32px; text-align: right; font-size: 13px; color: var(--muted); }
 
-/* Procs */
-.proc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.proc-stat { min-width: 56px; text-align: right; font-size: 12px; color: var(--muted); }
+.proc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.proc-stat { min-width: 54px; text-align: right; font-size: 12px; color: var(--muted); }
 </style>
 </head>
 <body>
-<div class="layout">
 
-  <div class="header">
-    <div class="header-left">
-      <div class="dot" id="dot"></div>
-      <div>
-        <div class="hostname" id="hostname">System Monitor</div>
-        <div class="uptime" id="osinfo">Connecting…</div>
-      </div>
-    </div>
-    <div class="ts" id="tsLabel">—</div>
-  </div>
-
-  <div class="cards">
-    <div class="card">
-      <div class="card-label"><i class="ti ti-cpu"></i> CPU</div>
-      <div class="card-value" id="cpuAvg">—</div>
-      <div class="card-sub" id="cpuSub">—</div>
-      <div class="bar-wrap"><div class="bar" id="cpuBar" style="width:0%"></div></div>
-    </div>
-    <div class="card">
-      <div class="card-label"><i class="ti ti-device-desktop-analytics"></i> Memory</div>
-      <div class="card-value" id="memVal">—</div>
-      <div class="card-sub" id="memSub">—</div>
-      <div class="bar-wrap"><div class="bar" id="memBar" style="width:0%"></div></div>
-    </div>
-    <div class="card">
-      <div class="card-label"><i class="ti ti-arrow-up"></i> Sent</div>
-      <div class="card-value" id="netSent">—</div>
-      <div class="card-sub">cumulative</div>
-    </div>
-    <div class="card">
-      <div class="card-label"><i class="ti ti-arrow-down"></i> Recv</div>
-      <div class="card-value" id="netRecv">—</div>
-      <div class="card-sub">cumulative</div>
+<div class="header">
+  <div class="header-left">
+    <div class="dot" id="dot"></div>
+    <div>
+      <div class="hostname" id="hostname">System Monitor</div>
+      <div class="uptime" id="osinfo">Connecting…</div>
     </div>
   </div>
-
-  <div class="col-left">
-    <div class="section grow">
-      <div class="section-head"><i class="ti ti-cpu"></i> CPU cores</div>
-      <div class="section-body">
-        <div class="cpu-grid" id="coreGrid"></div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-head"><i class="ti ti-network"></i> Network</div>
-      <div class="section-body" id="netList"></div>
-    </div>
-  </div>
-
-  <div class="col-right">
-    <div class="section">
-      <div class="section-head"><i class="ti ti-database"></i> Disk</div>
-      <div class="section-body" id="diskList"></div>
-    </div>
-    <div class="section grow">
-      <div class="section-head"><i class="ti ti-activity"></i> Processes</div>
-      <div class="section-body" id="procList"></div>
-    </div>
-  </div>
-
+  <div class="ts" id="tsLabel">—</div>
 </div>
+
+<div class="top">
+  <!-- CPU panel -->
+  <div class="panel">
+    <div class="panel-label"><i class="ti ti-cpu"></i> CPU</div>
+    <div class="panel-value" id="cpuAvg">—</div>
+    <div class="panel-sub" id="cpuSub">—</div>
+    <div class="bar-wrap"><div class="bar" id="cpuBar" style="width:0%"></div></div>
+    <div class="cpu-grid" id="coreGrid"></div>
+  </div>
+  <!-- Memory panel -->
+  <div class="panel">
+    <div class="panel-label"><i class="ti ti-device-desktop-analytics"></i> Memory</div>
+    <div class="panel-value" id="memVal">—</div>
+    <div class="panel-sub" id="memSub">—</div>
+    <div class="bar-wrap"><div class="bar" id="memBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="section">
+    <div class="section-head"><i class="ti ti-database"></i> Disk</div>
+    <div class="section-body" id="diskList"></div>
+  </div>
+  <div class="section">
+    <div class="section-head"><i class="ti ti-network"></i> Network</div>
+    <div class="section-body" id="netList"></div>
+  </div>
+  <div class="section">
+    <div class="section-head"><i class="ti ti-activity"></i> Processes</div>
+    <div class="section-body" id="procList"></div>
+  </div>
+</div>
+
 <script>
 function fmtMB(mb) {
   return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb + ' MB';
@@ -229,49 +202,43 @@ function render(d) {
   const cores = d.cpu.core_usage || [];
   const avg = cores.length ? Math.round(cores.reduce((a,b) => a+b,0) / cores.length) : 0;
   document.getElementById('cpuAvg').textContent = avg + '%';
-  document.getElementById('cpuSub').textContent = cores.length + ' cores';
+  document.getElementById('cpuSub').textContent = cores.length + ' cores · kernel ' + d.system.kernel;
   const cb = document.getElementById('cpuBar');
   cb.style.width = avg + '%'; cb.className = 'bar ' + barCls(avg);
+
+  document.getElementById('coreGrid').innerHTML = cores.map((p,i) => {
+    const pct = Math.round(p);
+    return `<div class="core">
+      <div class="core-label">c${i}</div>
+      <div class="core-val">${pct}%</div>
+      <div class="bar-wrap" style="margin-top:3px"><div class="bar ${barCls(pct)}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
 
   const mem = d.memory;
   const mp = Math.round(mem.used_percent);
   document.getElementById('memVal').textContent = mp + '%';
-  document.getElementById('memSub').textContent = fmtMB(mem.used_mb) + ' / ' + fmtMB(mem.total_mb);
+  document.getElementById('memSub').textContent = fmtMB(mem.used_mb) + ' used of ' + fmtMB(mem.total_mb);
   const mb = document.getElementById('memBar');
   mb.style.width = mp + '%'; mb.className = 'bar ' + barCls(mp);
 
   const ifaces = (d.network || []).filter(n => n.recv_mb > 0 || n.sent_mb > 0);
-  document.getElementById('netSent').textContent = fmtMB(ifaces.reduce((a,i) => a+i.sent_mb,0));
-  document.getElementById('netRecv').textContent = fmtMB(ifaces.reduce((a,i) => a+i.recv_mb,0));
-
-  document.getElementById('coreGrid').innerHTML = cores.map((p,i) => {
-    const pct = Math.round(p);
-    const cls = barCls(pct);
-    return `<div class="core">
-      <div class="core-label">c${i}</div>
-      <div class="core-val">${pct}%</div>
-      <div class="bar-wrap" style="margin-top:4px"><div class="bar ${cls}" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('diskList').innerHTML = (d.disks || []).map(dk => {
-    const pct = Math.round(dk.used_percent);
-    const cls = barCls(pct);
-    return `<div class="row">
-      <div class="disk-mount mono">${dk.mountpoint}</div>
-      <div class="disk-bar"><div class="disk-fill ${cls}" style="width:${pct}%"></div></div>
-      <div class="disk-pct">${pct}%</div>
-      <div class="disk-size muted">${dk.used_gb}/${dk.total_gb}GB</div>
-    </div>`;
-  }).join('');
-
   document.getElementById('netList').innerHTML = ifaces.map(n =>
     `<div class="row">
       <div class="mono" style="flex:1">${n.interface}</div>
-      <div class="muted" style="font-size:12px">↓<span class="val"> ${fmtMB(n.recv_mb)}</span></div>
-      <div class="muted" style="font-size:12px;margin-left:8px">↑<span class="val"> ${fmtMB(n.sent_mb)}</span></div>
+      <div class="muted" style="font-size:13px">↓<span class="val"> ${fmtMB(n.recv_mb)}</span></div>
+      <div class="muted" style="font-size:13px;margin-left:6px">↑<span class="val"> ${fmtMB(n.sent_mb)}</span></div>
     </div>`
   ).join('');
+
+  document.getElementById('diskList').innerHTML = (d.disks || []).map(dk => {
+    const pct = Math.round(dk.used_percent);
+    return `<div class="row">
+      <div class="disk-mount mono">${dk.mountpoint}</div>
+      <div class="disk-bar"><div class="disk-fill ${barCls(pct)}" style="width:${pct}%"></div></div>
+      <div class="disk-pct">${pct}%</div>
+    </div>`;
+  }).join('');
 
   document.getElementById('procList').innerHTML = (d.processes || []).map(p =>
     `<div class="row">
