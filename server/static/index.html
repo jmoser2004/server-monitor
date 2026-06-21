@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Monitor</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #2a2a2a;
+  --border: rgba(255,255,255,0.08);
+  --text: #e8e8e8;
+  --muted: #777;
+  --green: #639922;
+  --amber: #BA7517;
+  --red: #E24B4A;
+  --mono: 'Courier New', monospace;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: 15px;
+  padding: 12px;
+  height: 100vh;
+  overflow: hidden;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: 10px;
+  height: 100%;
+}
+
+/* Header spans full width */
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.header-left { display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; transition: background 0.3s; }
+.dot.ok { background: var(--green); }
+.hostname { font-size: 17px; font-weight: 500; }
+.uptime { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.ts { font-size: 12px; color: var(--muted); }
+
+/* Stat cards row spans full width */
+.cards {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.card {
+  background: var(--bg2);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.card-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-value { font-size: 26px; font-weight: 500; line-height: 1; }
+.card-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.bar-wrap { height: 3px; background: var(--bg3); border-radius: 2px; margin-top: 7px; overflow: hidden; }
+.bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; background: var(--green); }
+.bar.warn { background: var(--amber); }
+.bar.crit { background: var(--red); }
+
+/* Left column: CPU cores */
+.col-left { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+/* Right column: disk + procs */
+.col-right { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+.section {
+  background: var(--bg2);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.section.grow { flex: 1; }
+.section-head {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.section-body { overflow-y: auto; flex: 1; }
+
+/* CPU grid */
+.cpu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+  padding: 10px 12px;
+}
+.core { text-align: center; }
+.core-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.core-val { font-size: 13px; font-weight: 500; }
+
+/* Rows */
+.row {
+  display: flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  font-size: 13px;
+}
+.row:last-child { border-bottom: none; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--muted); }
+.val { color: var(--text); font-weight: 500; }
+
+/* Disk */
+.disk-mount { min-width: 80px; flex-shrink: 0; }
+.disk-bar { flex: 1; height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.disk-fill { height: 100%; border-radius: 2px; background: var(--green); }
+.disk-fill.warn { background: var(--amber); }
+.disk-fill.crit { background: var(--red); }
+.disk-pct { min-width: 32px; text-align: right; font-size: 12px; color: var(--muted); }
+.disk-size { min-width: 72px; text-align: right; font-size: 12px; color: var(--muted); }
+
+/* Procs */
+.proc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proc-stat { min-width: 56px; text-align: right; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="dot" id="dot"></div>
+      <div>
+        <div class="hostname" id="hostname">System Monitor</div>
+        <div class="uptime" id="osinfo">Connecting…</div>
+      </div>
+    </div>
+    <div class="ts" id="tsLabel">—</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-label"><i class="ti ti-cpu"></i> CPU</div>
+      <div class="card-value" id="cpuAvg">—</div>
+      <div class="card-sub" id="cpuSub">—</div>
+      <div class="bar-wrap"><div class="bar" id="cpuBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-device-desktop-analytics"></i> Memory</div>
+      <div class="card-value" id="memVal">—</div>
+      <div class="card-sub" id="memSub">—</div>
+      <div class="bar-wrap"><div class="bar" id="memBar" style="width:0%"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-arrow-up"></i> Sent</div>
+      <div class="card-value" id="netSent">—</div>
+      <div class="card-sub">cumulative</div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-arrow-down"></i> Recv</div>
+      <div class="card-value" id="netRecv">—</div>
+      <div class="card-sub">cumulative</div>
+    </div>
+  </div>
+
+  <div class="col-left">
+    <div class="section grow">
+      <div class="section-head"><i class="ti ti-cpu"></i> CPU cores</div>
+      <div class="section-body">
+        <div class="cpu-grid" id="coreGrid"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-head"><i class="ti ti-network"></i> Network</div>
+      <div class="section-body" id="netList"></div>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div class="section">
+      <div class="section-head"><i class="ti ti-database"></i> Disk</div>
+      <div class="section-body" id="diskList"></div>
+    </div>
+    <div class="section grow">
+      <div class="section-head"><i class="ti ti-activity"></i> Processes</div>
+      <div class="section-body" id="procList"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+function fmtMB(mb) {
+  return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : mb + ' MB';
+}
+function barCls(pct) {
+  return pct >= 90 ? 'crit' : pct >= 70 ? 'warn' : '';
+}
+function render(d) {
+  document.getElementById('dot').className = 'dot ok';
+  document.getElementById('hostname').textContent = d.system.hostname;
+  document.getElementById('osinfo').textContent = d.system.os + ' ' + d.system.version + ' · up ' + d.system.uptime;
+  document.getElementById('tsLabel').textContent = new Date(d.timestamp).toLocaleTimeString();
+
+  const cores = d.cpu.core_usage || [];
+  const avg = cores.length ? Math.round(cores.reduce((a,b) => a+b,0) / cores.length) : 0;
+  document.getElementById('cpuAvg').textContent = avg + '%';
+  document.getElementById('cpuSub').textContent = cores.length + ' cores';
+  const cb = document.getElementById('cpuBar');
+  cb.style.width = avg + '%'; cb.className = 'bar ' + barCls(avg);
+
+  const mem = d.memory;
+  const mp = Math.round(mem.used_percent);
+  document.getElementById('memVal').textContent = mp + '%';
+  document.getElementById('memSub').textContent = fmtMB(mem.used_mb) + ' / ' + fmtMB(mem.total_mb);
+  const mb = document.getElementById('memBar');
+  mb.style.width = mp + '%'; mb.className = 'bar ' + barCls(mp);
+
+  const ifaces = (d.network || []).filter(n => n.recv_mb > 0 || n.sent_mb > 0);
+  document.getElementById('netSent').textContent = fmtMB(ifaces.reduce((a,i) => a+i.sent_mb,0));
+  document.getElementById('netRecv').textContent = fmtMB(ifaces.reduce((a,i) => a+i.recv_mb,0));
+
+  document.getElementById('coreGrid').innerHTML = cores.map((p,i) => {
+    const pct = Math.round(p);
+    const cls = barCls(pct);
+    return `<div class="core">
+      <div class="core-label">c${i}</div>
+      <div class="core-val">${pct}%</div>
+      <div class="bar-wrap" style="margin-top:4px"><div class="bar ${cls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('diskList').innerHTML = (d.disks || []).map(dk => {
+    const pct = Math.round(dk.used_percent);
+    const cls = barCls(pct);
+    return `<div class="row">
+      <div class="disk-mount mono">${dk.mountpoint}</div>
+      <div class="disk-bar"><div class="disk-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="disk-pct">${pct}%</div>
+      <div class="disk-size muted">${dk.used_gb}/${dk.total_gb}GB</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('netList').innerHTML = ifaces.map(n =>
+    `<div class="row">
+      <div class="mono" style="flex:1">${n.interface}</div>
+      <div class="muted" style="font-size:12px">↓<span class="val"> ${fmtMB(n.recv_mb)}</span></div>
+      <div class="muted" style="font-size:12px;margin-left:8px">↑<span class="val"> ${fmtMB(n.sent_mb)}</span></div>
+    </div>`
+  ).join('');
+
+  document.getElementById('procList').innerHTML = (d.processes || []).map(p =>
+    `<div class="row">
+      <div class="proc-name">${p.name}</div>
+      <div class="proc-stat">CPU <span class="val">${p.cpu_percent.toFixed(1)}%</span></div>
+      <div class="proc-stat">MEM ${p.mem_percent.toFixed(1)}%</div>
+    </div>`
+  ).join('');
+}
+
+function connect() {
+  const url = 'ws://' + location.host + '/ws';
+  document.getElementById('osinfo').textContent = 'Connecting to ' + url + '…';
+  const ws = new WebSocket(url);
+  ws.onopen = () => document.getElementById('osinfo').textContent = 'Connected';
+  ws.onmessage = e => { try { render(JSON.parse(e.data)); } catch(err) { console.error(err); } };
+  ws.onerror = () => document.getElementById('osinfo').textContent = 'Connection error';
+  ws.onclose = () => {
+    document.getElementById('dot').className = 'dot';
+    document.getElementById('osinfo').textContent = 'Disconnected — retrying in 5s…';
+    setTimeout(connect, 5000);
+  };
+}
+connect();
+</script>
+</body>
+</html>
