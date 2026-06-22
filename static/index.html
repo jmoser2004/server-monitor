@@ -34,9 +34,10 @@ body{
   background:var(--bg);color:var(--ink);font-family:var(--sans);
   display:flex;align-items:center;justify-content:center;
 }
-/* Fixed-size canvas, scaled to fit the viewport — see fitScreen(). */
+/* Fixed-size canvas, scaled to fit the viewport — see fitScreen().
+   Sized for the target Pi panel (1024x600); scales down/up on others. */
 #screen{
-  width:800px;height:480px;flex:none;transform-origin:center center;
+  width:1024px;height:600px;flex:none;transform-origin:center center;
   display:grid;grid-template-columns:108px 1fr;grid-template-rows:44px 1fr;
   grid-template-areas:"brand header" "rail main";
   background:var(--bg);overflow:hidden;
@@ -94,6 +95,16 @@ body{
 .bar > i{display:block;height:100%;border-radius:4px;transition:width .4s ease,background .4s}
 .legend{display:flex;gap:14px;font-family:var(--mono);font-size:10px;color:var(--ink-dim);margin-top:8px;flex-wrap:wrap}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+/* ── overview bottom row lists ── */
+.ov-disk{margin-bottom:10px}
+.ov-disk:last-child{margin-bottom:0}
+.ov-disk-h{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink)}
+.ov-disk-h .dim{color:var(--ink-dim)}
+.ov-proc{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;
+  padding:5px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.ov-proc:last-child{border-bottom:0}
+.ov-proc-n{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
 
 /* ── gauges (overview) ── */
 .gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
@@ -186,11 +197,22 @@ td.dim{color:var(--ink-dim)}
       <div class="gauge"><div class="gwrap"><canvas id="g-load" width="208" height="208"></canvas>
         <div class="gv" id="g-load-v" style="color:var(--teal)">--</div></div><div class="lab">Load 1m</div></div>
     </div>
-    <div class="grid cols-2">
+    <div class="grid cols-2" style="margin-bottom:12px">
       <div class="card"><div class="ttl">CPU history <span class="v" id="ov-cpu-now">--</span></div>
         <canvas class="chart" id="ov-cpu-chart"></canvas></div>
       <div class="card"><div class="ttl">Network <span class="v" id="ov-net-now"></span></div>
         <canvas class="chart" id="ov-net-chart"></canvas></div>
+    </div>
+    <div class="grid cols-3">
+      <div class="card">
+        <div class="ttl">Memory <span class="v" id="ov-mem-v"></span></div>
+        <div class="bar"><i id="ov-mem-bar"></i></div>
+        <div class="ttl" style="margin:12px 0 0">Swap <span class="v" id="ov-swap-v"></span></div>
+        <div class="bar"><i id="ov-swap-bar"></i></div>
+      </div>
+      <div class="card"><div class="ttl">Storage</div><div id="ov-disks"></div></div>
+      <div class="card"><div class="ttl">Top processes <span class="v">CPU%</span></div>
+        <div id="ov-procs"></div></div>
     </div>
   </section>
 
@@ -446,6 +468,34 @@ function renderOverview(d){
   lineChart(document.getElementById('ov-net-chart'),
     [{data:H.rx,color:css('--teal')},{data:H.tx,color:css('--warn')}],
     {maxLabel:m=>fmtRate(m)});
+
+  // bottom row: memory/swap bars, storage, top processes
+  const m=d.memory;
+  document.getElementById('ov-mem-v').textContent=
+    (m.used_mb/1024).toFixed(1)+' / '+(m.total_mb/1024).toFixed(1)+' GB';
+  const mb=document.getElementById('ov-mem-bar');
+  mb.style.width=m.used_percent+'%';mb.style.background=loadColor(m.used_percent);
+  document.getElementById('ov-swap-v').textContent=
+    m.swap_total_mb?(m.swap_used_mb/1024).toFixed(1)+' / '+(m.swap_total_mb/1024).toFixed(1)+' GB':'none';
+  const sb=document.getElementById('ov-swap-bar');
+  sb.style.width=(m.swap_percent||0)+'%';sb.style.background=loadColor(m.swap_percent||0);
+
+  const od=document.getElementById('ov-disks');od.innerHTML='';
+  (d.disks||[]).slice(0,3).forEach(k=>{
+    const row=document.createElement('div');row.className='ov-disk';
+    row.innerHTML=`<div class="ov-disk-h"><span>${k.mountpoint}</span>`+
+      `<span class="dim">${gb(k.used_gb)} / ${gb(k.total_gb)}</span></div>`+
+      `<div class="bar" style="margin-top:5px"><i style="width:${k.used_percent}%;background:${loadColor(k.used_percent)}"></i></div>`;
+    od.appendChild(row);
+  });
+
+  const op=document.getElementById('ov-procs');op.innerHTML='';
+  (d.processes||[]).slice(0,5).forEach(p=>{
+    const row=document.createElement('div');row.className='ov-proc';
+    row.innerHTML=`<span class="ov-proc-n">${p.name}</span>`+
+      `<span style="color:${loadColor(p.cpu_percent)}">${p.cpu_percent.toFixed(1)}</span>`;
+    op.appendChild(row);
+  });
 }
 
 function renderCPU(d){
@@ -574,7 +624,7 @@ function renderSys(d){
 //──────────────────────────────────────────────────────────────────
 // fit the fixed 800x480 layout to whatever screen it runs on
 //──────────────────────────────────────────────────────────────────
-const SCREEN_W=800, SCREEN_H=480, screenEl=document.getElementById('screen');
+const SCREEN_W=1024, SCREEN_H=600, screenEl=document.getElementById('screen');
 function fitScreen(){
   const s=Math.min(window.innerWidth/SCREEN_W, window.innerHeight/SCREEN_H);
   screenEl.style.transform=`scale(${s})`;
