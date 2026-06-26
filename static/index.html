@@ -194,8 +194,8 @@ td.dim{color:var(--ink-dim)}
         <div class="gv" id="g-mem-v" style="color:var(--teal)">--</div></div><div class="lab">Memory</div></div>
       <div class="gauge"><div class="gwrap"><canvas id="g-disk" width="208" height="208"></canvas>
         <div class="gv" id="g-disk-v" style="color:var(--teal)">--</div></div><div class="lab">Root FS</div></div>
-      <div class="gauge"><div class="gwrap"><canvas id="g-load" width="208" height="208"></canvas>
-        <div class="gv" id="g-load-v" style="color:var(--teal)">--</div></div><div class="lab">Load 1m</div></div>
+      <div class="gauge"><div class="gwrap"><canvas id="g-gpu" width="208" height="208"></canvas>
+        <div class="gv" id="g-gpu-v" style="color:var(--teal)">--</div></div><div class="lab">GPU</div></div>
     </div>
     <div class="grid cols-2" style="margin-bottom:12px">
       <div class="card"><div class="ttl">CPU history <span class="v" id="ov-cpu-now">--</span></div>
@@ -459,8 +459,18 @@ function renderOverview(d){
   gaugeSet('g-mem','g-mem-v',d.memory.used_percent,Math.round(d.memory.used_percent)+'%');
   const root=(d.disks||[]).find(x=>x.mountpoint==='/')||(d.disks||[])[0];
   if(root)gaugeSet('g-disk','g-disk-v',root.used_percent,Math.round(root.used_percent)+'%');
-  const lpct=Math.min(100,d.system.load1/(d.cpu.logical||1)*100);
-  gaugeSet('g-load','g-load-v',lpct,d.system.load1.toFixed(2));
+  // GPU gauge: util% if exposed, else VRAM% as a fallback, else n/a
+  const gpu=(d.gpus||[])[0];
+  if(gpu&&gpu.util>=0){
+    gaugeSet('g-gpu','g-gpu-v',gpu.util,gpu.util.toFixed(0)+'%');
+  }else if(gpu&&gpu.mem_total_mb>0){
+    const vp=gpu.mem_used_mb/gpu.mem_total_mb*100;
+    gaugeSet('g-gpu','g-gpu-v',vp,vp.toFixed(0)+'%');
+  }else{
+    ring(document.getElementById('g-gpu'),0,'',css('--ink-faint'));
+    const el=document.getElementById('g-gpu-v');el.textContent=gpu?'idle':'n/a';
+    el.style.color=css('--ink-faint');
+  }
   document.getElementById('ov-cpu-now').textContent=d.cpu.total_usage.toFixed(0)+'%';
   lineChart(document.getElementById('ov-cpu-chart'),[{data:H.cpu,color:css('--teal')}],{max:100});
   let rx=0,tx=0;(d.network||[]).forEach(n=>{rx+=n.recv_sec;tx+=n.sent_sec;});
