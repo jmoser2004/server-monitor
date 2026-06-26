@@ -34,10 +34,12 @@ body{
   background:var(--bg);color:var(--ink);font-family:var(--sans);
   display:flex;align-items:center;justify-content:center;
 }
-/* Fluid canvas — fills whatever viewport it runs on, any size/aspect.
-   The main area is a 1fr scroll region, so content reflows to fit. */
+/* Fixed-size design canvas, magnified with transform to fill the
+   viewport — see fitScreen(). This way the whole UI (icons, text,
+   gauges) scales up on a dense panel instead of rendering at tiny
+   native pixel sizes. Sized for the target Pi panel (1024x600). */
 #screen{
-  width:100vw;height:100vh;
+  width:1024px;height:600px;flex:none;transform-origin:center center;
   display:grid;grid-template-columns:148px 1fr;grid-template-rows:44px 1fr;
   grid-template-areas:"brand header" "rail main";
   background:var(--bg);overflow:hidden;
@@ -63,10 +65,10 @@ body{
 .rail{grid-area:rail;background:var(--panel2);border-right:1px solid var(--line2);
   display:flex;flex-direction:column;overflow-y:auto}
 .tab{appearance:none;border:0;background:transparent;color:var(--ink-faint);
-  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  height:96px;flex:0 0 96px;cursor:pointer;position:relative;transition:color .15s,background .15s}
-.tab svg{width:56px;height:56px;stroke:currentColor;stroke-width:1.5;fill:none;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  height:68px;flex:0 0 68px;cursor:pointer;position:relative;transition:color .15s,background .15s}
+.tab svg{width:42px;height:42px;stroke:currentColor;stroke-width:1.6;fill:none;
   stroke-linecap:round;stroke-linejoin:round}
 .tab:active{background:var(--panel)}
 .tab.on{color:var(--teal);background:var(--panel)}
@@ -632,10 +634,16 @@ function renderSys(d){
 }
 
 //──────────────────────────────────────────────────────────────────
-// the layout is fluid (100vw x 100vh) — just redraw charts on resize
-// so the DPR-aware canvases re-fit their new pixel size
+// fit the fixed 1024x600 design canvas to whatever screen it runs on
+// by magnifying it — so icons/text scale up instead of staying tiny
 //──────────────────────────────────────────────────────────────────
-window.addEventListener('resize',()=>{if(last)render(last);});
+const SCREEN_W=1024, SCREEN_H=600, screenEl=document.getElementById('screen');
+function fitScreen(){
+  const s=Math.min(window.innerWidth/SCREEN_W, window.innerHeight/SCREEN_H);
+  screenEl.style.transform=`scale(${s})`;
+}
+window.addEventListener('resize',fitScreen);
+fitScreen();
 
 connect();
 </script>
